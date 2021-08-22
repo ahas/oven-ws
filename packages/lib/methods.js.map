@@ -1,0 +1,1 @@
+{"version":3,"sources":["methods.js"],"names":[],"mappings":"AAAA,eAAe,CAAC,KAAD,EAAQ,MAAR,EAAgB,MAAhB,EAAwB,KAAxB,EAA+B,QAA/B,EAAyC,SAAzC,EAAoD,SAApD,EAA+D,OAA/D,EAAwE,OAAxE,CAAf;AACA","file":"methods.js","sourcesContent":["export default [\"get\", \"head\", \"post\", \"put\", \"delete\", \"connect\", \"options\", \"trace\", \"patch\"];\r\n//# sourceMappingURL=methods.js.map"]}

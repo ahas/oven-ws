@@ -1,0 +1,15 @@
+{
+    "exclude": ["node_modules", "packages/lib", "**/__test__"],
+    "compilerOptions": {
+        "target": "ES2021",
+        "module": "CommonJS",
+        "moduleResolution": "Node",
+        "alwaysStrict": true,
+        "allowJs": false,
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        "noImplicitAny": true,
+        "declaration": true,
+        "isolatedModules": true,
+    }
+}

@@ -1,0 +1,173 @@
+/**
+ * Module dependencies.
+ * @private
+ */
+
+import createError, { HttpError } from "http-errors";
+import getRawBody from "raw-body";
+import iconv from "iconv-lite";
+import onFinished from "on-finished";
+import zlib from "zlib";
+import dbg from "debug";
+
+// Types
+import { BodyDictionary, NextHandler, Request, Response } from "src/types";
+import { Readable, Transform } from "stream";
+import { BodyParserOptions } from "./types";
+
+// Type Definitions
+type ParseBody = (body: string | Buffer) => BodyDictionary;
+type ContentStream = Readable & { length: string };
+type ReadOptions = BodyParserOptions & getRawBody.Options;
+
+/**
+ * Read a request into a buffer and parse.
+ *
+ * @param {object} req
+ * @param {object} res
+ * @param {function} next
+ * @param {function} parse
+ * @param {function} debug
+ * @param {object} options
+ * @private
+ */
+
+export default function read(req: Request, res: Response, next: NextHandler, parse: ParseBody, debug: dbg.Debugger, options: ReadOptions) {
+    const opts: ReadOptions = options;
+    let length: string;
+    let stream: ContentStream;
+
+    // flag as parsed
+    req.bodyParsed = true;
+
+    // read options
+    const encoding = (opts.encoding !== null ? opts.encoding : null) as string;
+    const verify = opts.verify;
+
+    try {
+        // get the content stream
+        stream = contentStream(req, debug, opts.inflate);
+        length = stream.length;
+        delete stream.length;
+    } catch (err) {
+        return next(err);
+    }
+
+    // set raw-body options
+    opts.length = length;
+    opts.encoding = verify ? null : encoding;
+
+    // assert charset is supported
+    if (opts.encoding === null && encoding !== null && !iconv.encodingExists(encoding)) {
+        return next(
+            createError(415, 'unsupported charset "' + encoding.toUpperCase() + '"', {
+                charset: encoding.toLowerCase(),
+                type: "charset.unsupported",
+            }),
+        );
+    }
+
+    // read body
+    debug("read body");
+    getRawBody(stream, opts, function (error, body) {
+        if (error) {
+            let err: HttpError;
+
+            if (error.type === "encoding.unsupported") {
+                // echo back charset
+                err = createError(415, 'unsupported charset "' + encoding.toUpperCase() + '"', {
+                    charset: encoding.toLowerCase(),
+                    type: "charset.unsupported",
+                });
+            } else {
+                // set status code on error
+                err = createError(400, error);
+            }
+
+            // read off entire request
+            stream.resume();
+            onFinished(req, function onfinished() {
+                next(createError(400, err));
+            });
+            return;
+        }
+
+        // verify
+        if (verify) {
+            try {
+                debug("verify body");
+                verify(req, res, body, encoding);
+            } catch (err) {
+                next(
+                    createError(403, err, {
+                        body: body,
+                        type: err.type || "entity.verify.failed",
+                    }),
+                );
+                return;
+            }
+        }
+
+        // parse
+        let str: string | Buffer = body;
+        try {
+            debug("parse body");
+            str = typeof body !== "string" && encoding !== null ? iconv.decode(body, encoding) : body;
+            req.body = parse(str as string);
+        } catch (err) {
+            next(
+                createError(400, err, {
+                    body: str,
+                    type: err.type || "entity.parse.failed",
+                }),
+            );
+            return;
+        }
+
+        next();
+    });
+}
+
+/**
+ * Get the content stream of the request.
+ * @api private
+ */
+
+function contentStream(req: Request, debug: dbg.Debugger, inflate = true): ContentStream {
+    const encoding = (req.headers["content-encoding"] || "identity").toLowerCase();
+    const length = req.headers["content-length"];
+    let stream: (Transform | Request) & Readable;
+
+    debug('content-encoding "%s"', encoding);
+
+    if (inflate === false && encoding !== "identity") {
+        throw createError(415, "content encoding unsupported", {
+            encoding: encoding,
+            type: "encoding.unsupported",
+        });
+    }
+
+    switch (encoding) {
+        case "deflate":
+            stream = zlib.createInflate();
+            debug("inflate body");
+            req.pipe(stream);
+            break;
+        case "gzip":
+            stream = zlib.createGunzip();
+            debug("gunzip body");
+            req.pipe(stream);
+            break;
+        case "identity":
+            stream = req;
+            stream.length = length;
+            break;
+        default:
+            throw createError(415, 'unsupported content encoding "' + encoding + '"', {
+                encoding: encoding,
+                type: "encoding.unsupported",
+            });
+    }
+
+    return stream as ContentStream;
+}
