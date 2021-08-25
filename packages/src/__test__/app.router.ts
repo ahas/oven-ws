@@ -1,6 +1,6 @@
-import after from "after";
+import after from "./utils/after";
 import ws from "..";
-import request from "supertest";
+import request, { CallbackHandler } from "supertest";
 import assert from "assert";
 import methods from "../methods";
 
@@ -60,7 +60,7 @@ describe("app.router", () => {
 
         it("should re-route when method is altered", (done) => {
             const app = ws();
-            const cb = after(3, done);
+            const cb = after(3, done) as CallbackHandler;
 
             app.use((req, res, next) => {
                 if (req.method !== "POST") return next();
@@ -687,7 +687,7 @@ describe("app.router", () => {
 
         it("should work following a partial capture group", (done) => {
             const app = ws();
-            const cb = after(2, done);
+            const cb = after(2, done) as CallbackHandler;
 
             app.get("/user(s)?/:user/:op", (req, res) => {
                 res.end(req.params.op + "ing " + req.params.user + (req.params[0] ? " (old)" : ""));
@@ -710,7 +710,7 @@ describe("app.router", () => {
 
         it("should work in array of paths", (done) => {
             const app = ws();
-            const cb = after(2, done);
+            const cb = after(2, done) as CallbackHandler;
 
             app.get(["/user/:user/poke", "/user/:user/pokes"], (req, res) => {
                 res.end("poking " + req.params.user);

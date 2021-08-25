@@ -1,9 +1,9 @@
 import ws from "../";
 import fs from "fs";
 import path from "path";
-import { RenderCallback, RenderOptions } from "../types";
+import { RenderOptions } from "../types";
 
-function render(path: string, options: RenderOptions, fn: RenderCallback) {
+function render(path: string, options: RenderOptions, fn: oven.ws.RenderCallback) {
     fs.readFile(path, "utf8", (err, str) => {
         if (err) {
             return fn(err);

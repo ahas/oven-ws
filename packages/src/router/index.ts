@@ -500,7 +500,7 @@ Router.prototype.use = function (this: Router, fn: any): Router {
 };
 
 // create Router#VERB functions
-methods.concat("all").forEach(function (method: RouterMethod) {
+(methods as string[]).concat("all").forEach(function (method: RouterMethod) {
     Router.prototype[method] = function (path: string) {
         const route = this.route(path);
         route[method].apply(route, slice.call(arguments, 1));

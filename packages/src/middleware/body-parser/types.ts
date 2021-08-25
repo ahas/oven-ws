@@ -1,6 +1,4 @@
-import { Request, Response, RequestHandler } from "src/types";
-
-export type Verify = ((req: Request, res: Response, body: Buffer, encoding: string) => boolean) | false;
+export type Verify = ((req: oven.ws.Request, res: oven.ws.Response, body: Buffer, encoding: string) => boolean) | false;
 
 export interface BodyParserOptions {
     type?: string;
@@ -25,5 +23,5 @@ export interface UrlencodedBodyParserOptions extends BodyParserOptions {
 }
 
 export interface BodyParser {
-    (options: BodyParserOptions): RequestHandler;
+    (options: BodyParserOptions): oven.ws.RequestHandler;
 }

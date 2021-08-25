@@ -12,7 +12,7 @@ import bodyParser from "./middleware/body-parser";
 import query from "./middleware/query";
 import serveStatic from "./serve-static";
 import { IParseOptions } from "qs";
-import { JsonBodyParserOptions } from "lib/middleware/body-parser/types";
+import { JsonBodyParserOptions } from "./middleware/body-parser/types";
 
 export interface WS {
     (): Application & RequestListener;
